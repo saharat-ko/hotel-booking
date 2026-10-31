@@ -51,7 +51,7 @@ exports.login = async (req, res, next) => {
     sendTokenResponse(user, 200, res);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: 'Server Error' });
+    res.status(401).json({ success: false, error: 'Cannot convert email or password to string' });
   }
 };
 
@@ -93,6 +93,26 @@ exports.getMe = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: user,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
+// @desc    Logout user / clear cookie
+// @route   GET /api/v1/auth/logout
+// @access  Private
+exports.logout = async (req, res, next) => {
+  try {
+    res.cookie('token', 'none', {
+      expires: new Date(Date.now() + 10 * 1000),
+      httpOnly: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {},
     });
   } catch (err) {
     console.error(err);

@@ -3,6 +3,13 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
+const mongoSanitize = require('@exortek/express-mongo-sanitize');
+const helmet = require('helmet');
+const {xss} = require('express-xss-sanitizer');
+const rateLimit = require('express-rate-limit');
+const hpp = require('hpp');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJSDoc = require('swagger-jsdoc');
 
 // Route files
 const hospitals = require('./routes/hospitals');
@@ -31,6 +38,51 @@ app.use(cookieParser());
 
 // Body parser
 app.use(express.json());
+
+// Sanitize data
+app.use(mongoSanitize());
+
+// Set security headers
+app.use(helmet());
+
+// Prevent XSS attacks
+app.use(xss());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 10 minutes)
+  message: 'Too many requests from this IP, please try again after 10 minutes',
+});
+app.use(limiter);
+
+// Prevent http param pollution
+app.use(hpp());
+
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Library API',
+    version: '1.0.0',
+    description: 'A simple Express Library API',
+  },
+  servers: [
+    {
+      url: `http://localhost:${process.env.PORT || 5003}`,
+      description: 'Development server',
+    },
+  ],
+};
+
+const options = {
+  swaggerDefinition,
+  apis: ['./routes/*.js'], // Path to the API docs
+};
+
+const swaggerSpec = swaggerJSDoc(options);
+
+// Serve Swagger docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Mount routers
 app.use('/api/v1/hospitals', hospitals);

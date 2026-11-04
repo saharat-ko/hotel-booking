@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const crypto = require('node:crypto');
+const bcrypt = require('bcryptjs');
 const mailer = require('../config/mailer');
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
@@ -8,6 +9,20 @@ const emailQuery = (email) => ({
 });
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const newVerificationToken = () => crypto.randomBytes(32).toString('hex');
+const LOGIN_FAILURE_WINDOW_MS = 3 * 60 * 1000;
+//const ACCOUNT_LOCK_MS = 15 * 60 * 1000;
+const ACCOUNT_LOCK_MS = 5 * 1000;
+
+function lockedResponse(res, lockUntil) {
+  const duration = ACCOUNT_LOCK_MS % (60 * 1000) === 0
+    ? `${ACCOUNT_LOCK_MS / (60 * 1000)} minutes`
+    : `${Math.ceil(ACCOUNT_LOCK_MS / 1000)} seconds`;
+  return res.status(423).json({
+    success: false,
+    error: `Account is temporarily locked. Please try again after ${duration}.`,
+    ...(lockUntil ? { lockedUntil: lockUntil.toISOString() } : {}),
+  });
+}
 
 async function sendVerificationEmail(email, token) {
   const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5003}`;
@@ -197,12 +212,63 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      return lockedResponse(res, user.lockUntil);
+    }
+
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
+      const now = new Date();
+      const windowStart = new Date(now.getTime() - LOGIN_FAILURE_WINDOW_MS);
+      const firstInWindow = {
+        $and: [
+          { $gte: ['$firstFailedLoginAt', windowStart] },
+          { $lte: ['$firstFailedLoginAt', now] },
+        ],
+      };
+      const nextAttempts = {
+        $cond: [firstInWindow, { $add: [{ $ifNull: ['$failedLoginAttempts', 0] }, 1] }, 1],
+      };
+      const updated = await User.findOneAndUpdate(
+        {
+          _id: user._id,
+          $or: [{ lockUntil: { $exists: false } }, { lockUntil: { $lte: now } }],
+        },
+        [{
+          $set: {
+            failedLoginAttempts: nextAttempts,
+            firstFailedLoginAt: { $cond: [firstInWindow, '$firstFailedLoginAt', now] },
+            lockUntil: {
+              $cond: [
+                { $gte: [nextAttempts, 5] },
+                new Date(now.getTime() + ACCOUNT_LOCK_MS),
+                '$$REMOVE',
+              ],
+            },
+          },
+        }],
+        { new: true, updatePipeline: true }
+      );
+      if (!updated || (updated.lockUntil && updated.lockUntil > now)) {
+        return lockedResponse(res, updated && updated.lockUntil);
+      }
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
+
+    const now = new Date();
+    const cleared = await User.updateOne(
+      {
+        _id: user._id,
+        $or: [{ lockUntil: { $exists: false } }, { lockUntil: { $lte: now } }],
+      },
+      {
+        $set: { failedLoginAttempts: 0 },
+        $unset: { firstFailedLoginAt: 1, lockUntil: 1 },
+      }
+    );
+    if (!cleared.matchedCount) return lockedResponse(res);
 
     if (user.emailVerified === false) {
       return res.status(403).json({ success: false, error: 'Please verify your email before logging in' });
@@ -211,7 +277,7 @@ exports.login = async (req, res, next) => {
     sendTokenResponse(user, 200, res);
   } catch (err) {
     console.error(err);
-    res.status(401).json({ success: false, error: 'Cannot convert email or password to string' });
+    res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
@@ -241,6 +307,49 @@ const sendTokenResponse = (user, statusCode, res) => {
       email:user.email,
       token,
     });
+};
+
+// @desc    Change password for the current user
+// @route   PUT /api/v1/auth/change-password
+// @access  Private
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof currentPassword !== 'string' || !currentPassword ||
+      typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide your current password and a new password of at least 8 characters',
+    });
+  }
+
+  if (!req.user?.id) {
+    return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
+  }
+
+  try {
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
+    }
+
+    if (!await user.matchPassword(currentPassword)) {
+      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const result = await User.updateOne(
+      { _id: user._id, password: user.password },
+      { $set: { password: passwordHash } }
+    );
+    if (!result.matchedCount) {
+      return res.status(409).json({ success: false, error: 'Password changed during this request. Please try again.' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, error: 'Server Error' });
+  }
 };
 
 // @desc    Get current logged in user

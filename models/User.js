@@ -40,6 +40,9 @@ const UserSchema = new mongoose.Schema({
   emailVerified: Boolean,
   emailVerificationToken: { type: String, select: false },
   emailVerificationSentAt: Date,
+  failedLoginAttempts: { type: Number, default: 0 },
+  firstFailedLoginAt: Date,
+  lockUntil: Date,
   createdAt: {
     type: Date,
     default: Date.now,

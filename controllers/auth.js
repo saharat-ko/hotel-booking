@@ -1,22 +1,50 @@
 const User = require('../models/User');
 
+const normalizeEmail = (email) => email.trim().toLowerCase();
+const emailQuery = (email) => ({
+  email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+});
+
 // @desc    Register user
 // @route   POST /api/v1/auth/register
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, telephone, email, password, role } = req.body || {};
 
-    //create user to the database
+    if (
+      typeof name !== 'string' || !name.trim() ||
+      typeof telephone !== 'string' || !telephone.trim() ||
+      typeof email !== 'string' || !email.trim() ||
+      typeof password !== 'string' || password.length < 8
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide a name, telephone number, valid email, and password of at least 8 characters',
+      });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (await User.exists(emailQuery(normalizedEmail))) {
+      return res.status(409).json({ success: false, error: 'Email is already registered' });
+    }
+
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      telephone: telephone.trim(),
+      email: normalizedEmail,
       password,
       role,
     });
 
     sendTokenResponse(user, 201, res);
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ success: false, error: 'Email is already registered' });
+    }
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ success: false, error: err.message });
+    }
     console.error(err);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
@@ -26,16 +54,16 @@ exports.register = async (req, res, next) => {
 // @route   POST /api/v1/auth/login
 // @access  Public
 exports.login = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
 
   // Validate email & password
-  if (!email || !password) {
+  if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
     return res.status(400).json({ success: false, error: 'Please provide an email and password' });
   }
   
   try {
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne(emailQuery(normalizeEmail(email))).select('+password');
 
     if (!user) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });

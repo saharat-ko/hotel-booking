@@ -5,16 +5,16 @@ const connectDB = require('./config/db');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('@exortek/express-mongo-sanitize');
 const helmet = require('helmet');
-const {xss} = require('express-xss-sanitizer');
+const { xss } = require('express-xss-sanitizer');
 const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJSDoc = require('swagger-jsdoc');
 
 // Route files
-const hospitals = require('./routes/hospitals');
+const hotels = require('./routes/hotels');
 const auth = require('./routes/auth');
-const appointments = require('./routes/appointments');
+const bookings = require('./routes/bookings');
 
 // Load env vars
 dotenv.config({ path: './config/config.env' });
@@ -51,7 +51,7 @@ app.use(xss());
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 10 minutes)
+  max: 100,
   message: 'Too many requests from this IP, please try again after 10 minutes',
 });
 app.use(limiter);
@@ -59,12 +59,13 @@ app.use(limiter);
 // Prevent http param pollution
 app.use(hpp());
 
+// Swagger configuration
 const swaggerDefinition = {
   openapi: '3.0.0',
   info: {
-    title: 'Library API',
+    title: 'Hotel Booking API',
     version: '1.0.0',
-    description: 'A simple Express Library API',
+    description: 'REST API for Hotel Booking System',
   },
   servers: [
     {
@@ -72,11 +73,24 @@ const swaggerDefinition = {
       description: 'Development server',
     },
   ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+    },
+  },
 };
 
 const options = {
   swaggerDefinition,
-  apis: ['./routes/*.js'], // Path to the API docs
+  apis: [
+    './routes/hotels.js',
+    './routes/auth.js',
+    './routes/bookings.js'
+  ],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
@@ -85,10 +99,12 @@ const swaggerSpec = swaggerJSDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Mount routers
-app.use('/api/v1/hospitals', hospitals);
+app.use('/api/v1/hotels', hotels);
 app.use('/api/v1/auth', auth);
-app.use('/api/v1/appointments', appointments);
-const PORT = process.env.PORT || 5003;
+app.use('/api/v1/bookings', bookings);
+
+const PORT = process.env.PORT || 5000;
+
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
@@ -96,6 +112,5 @@ const server = app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   console.log(`Error: ${err.message}`);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });

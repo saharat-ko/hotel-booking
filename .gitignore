@@ -3,3 +3,10 @@ node_modules/*
 
 #ignore config files
 config/config.env
+
+# ignore autograde
+.git/*
+.github/*
+__tests__/*
+# autogrades.js
+autograde.js

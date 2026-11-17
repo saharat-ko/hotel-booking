@@ -13,3 +13,6 @@ autograde.js
 
 # Ignore PlantUML diagram files
 docs/diagrams/*.puml
+
+# Ignore Postman Collection
+Hotels.postman_collection.json

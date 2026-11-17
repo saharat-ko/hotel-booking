@@ -1,0 +1,38 @@
+---
+config:
+  theme: redux
+---
+sequenceDiagram
+    autonumber
+
+    actor User
+    participant Router
+    participant Middleware
+    participant Controller
+    participant DB as MongoDB
+
+    User->>Router: POST /api/v1/bookings
+    Router->>Middleware: Verify JWT and role
+
+    alt Unauthorized
+        Middleware-->>User: 401 / 403 Unauthorized
+    else Authorized
+        Middleware->>Controller: addBooking(req, res)
+        Controller->>Controller: Validate hotel and dates
+        Controller->>DB: Find hotel by ID
+        DB-->>Controller: Hotel data
+
+        alt Invalid hotel
+            Controller-->>User: 404 Hotel not found
+        else Valid hotel
+            Controller->>Controller: Check stay (1-3 nights)
+
+            alt Invalid stay
+                Controller-->>User: 400 Invalid booking dates
+            else Valid stay
+                Controller->>DB: Create booking
+                DB-->>Controller: Booking saved
+                Controller-->>User: 201 Booking created
+            end
+        end
+    end

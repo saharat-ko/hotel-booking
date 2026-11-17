@@ -1,0 +1,60 @@
+---
+config:
+  theme: redux
+  layout: elk
+---
+classDiagram
+direction TB
+    class User {
+	    +String id
+	    +String name
+	    +String telephone
+	    +String email
+	    +String password
+	    +String role
+	    +Boolean emailVerified
+	    +String emailVerificationToken
+	    +DateTime emailVerificationSentAt
+	    +String resetPasswordToken
+	    +DateTime resetPasswordExpire
+	    +int failedLoginAttempts
+	    +DateTime lockUntil
+	    +DateTime firstFailedLoginAt
+	    +DateTime createdAt
+	    +register()
+	    +login()
+	    +logout()
+	    +updateProfile()
+	    +changePassword()
+	    +resetForgottenPassword()
+	    +verifyEmail()
+    }
+
+    class Hotel {
+	    +String id
+	    +String name
+	    +String address
+	    +String district
+	    +String province
+	    +String postalcode
+	    +String tel
+	    +getAllHotels()
+	    +getHotelDetailById()
+    }
+
+    class Booking {
+	    +String id
+	    +String userId
+	    +String hotelId
+	    +DateTime checkInDate
+	    +DateTime checkOutDate
+	    +DateTime createdAt
+	    +createBooking()
+	    +getMyBookings()
+	    +getAllBookings()
+	    +updateBooking()
+	    +deleteBooking()
+    }
+
+    User "1" --> "0..*" Booking : makes
+    Hotel "1" --> "0..*" Booking : receives

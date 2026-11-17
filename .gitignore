@@ -11,5 +11,5 @@ __tests__/*
 # autogrades.js
 autograde.js
 
-# Ignore diagrams folder
-docs/diagrams/
+# Ignore PlantUML diagram files
+docs/diagrams/*.puml

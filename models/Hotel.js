@@ -28,17 +28,10 @@ const HotelSchema = new mongoose.Schema({
   tel: {
     type: String,
     required: [true, 'Please add a telephone number']
-  },
-  region: {
-    type: String,
-    required: [true, 'Please add a region']
   }
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
-
-// Reverse populate with virtuals
-// Will be added after creating the Booking model
 
 module.exports = mongoose.model('Hotel', HotelSchema);

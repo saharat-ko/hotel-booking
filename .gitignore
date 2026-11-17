@@ -10,3 +10,6 @@ config/config.env
 __tests__/*
 # autogrades.js
 autograde.js
+
+# Ignore diagrams folder
+docs/diagrams/

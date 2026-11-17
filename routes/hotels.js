@@ -41,7 +41,6 @@ module.exports = router;
  *         - province
  *         - postalcode
  *         - tel
- *         - region
  *       properties:
  *         _id:
  *           type: string
@@ -65,9 +64,6 @@ module.exports = router;
  *         tel:
  *           type: string
  *           description: The hotel's telephone number
- *         region:
- *           type: string
- *           description: The hotel's region
  *       example:
  *         _id: "507f1f77bcf86cd799439011"
  *         name: "Grand Bangkok Hotel"
@@ -76,7 +72,6 @@ module.exports = router;
  *         province: "Bangkok"
  *         postalcode: "10110"
  *         tel: "02-123-4567"
- *         region: "Central"
  */
 
 /**

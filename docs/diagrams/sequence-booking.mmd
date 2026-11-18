@@ -3,7 +3,6 @@ config:
   theme: redux
 ---
 sequenceDiagram
-    autonumber
 
     actor User
     participant Router
@@ -12,7 +11,8 @@ sequenceDiagram
     participant DB as MongoDB
 
     User->>Router: POST /api/v1/bookings
-    Router->>Middleware: Verify JWT and role
+    Router->>Middleware: jwt.verify(token)
+    Middleware->>Middleware: Verify JWT and role
 
     alt Unauthorized
         Middleware-->>User: 401 / 403 Unauthorized

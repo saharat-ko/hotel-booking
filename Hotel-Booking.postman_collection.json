@@ -297,7 +297,7 @@
       "response": []
     },
     {
-      "name": "Get own Booking",
+      "name": "Get Own Booking",
       "event": [
         {
           "listen": "test",
@@ -338,7 +338,7 @@
       "response": []
     },
     {
-      "name": "Update One Booking",
+      "name": "Update Own Booking",
       "event": [
         {
           "listen": "test",
@@ -394,7 +394,7 @@
       "response": []
     },
     {
-      "name": "Delete One Booking",
+      "name": "Delete Own Booking",
       "event": [
         {
           "listen": "test",
@@ -584,7 +584,7 @@
       "response": []
     },
     {
-      "name": "Get any Booking",
+      "name": "Get Any Booking",
       "event": [
         {
           "listen": "test",
@@ -625,7 +625,7 @@
       "response": []
     },
     {
-      "name": "Admin Update One Booking",
+      "name": "Admin Update Any Booking",
       "event": [
         {
           "listen": "test",
@@ -681,7 +681,7 @@
       "response": []
     },
     {
-      "name": "Admin Delete One Booking",
+      "name": "Admin Delete Any Booking",
       "event": [
         {
           "listen": "test",

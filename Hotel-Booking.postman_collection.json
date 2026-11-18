@@ -187,7 +187,7 @@
       "response": []
     },
     {
-      "name": "Create New Booking More than 3 days",
+      "name": "Create New Booking More than 3 nights",
       "event": [
         {
           "listen": "test",

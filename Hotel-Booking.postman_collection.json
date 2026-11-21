@@ -1,14 +1,14 @@
 {
   "info": {
-    "_postman_id": "f8dceef8-a9e4-4c87-b616-1f9c6cd3bbc6",
+    "_postman_id": "1b3d0d3b-b44d-4079-be9d-aed749694325",
     "name": "Hotel-Booking",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "37702944",
-    "_collection_link": "https://go.postman.co/collection/37702944-f8dceef8-a9e4-4c87-b616-1f9c6cd3bbc6?source=collection_link"
+    "_collection_link": "https://go.postman.co/collection/37702944-1b3d0d3b-b44d-4079-be9d-aed749694325?source=collection_link"
   },
   "item": [
     {
-      "name": "Register - No password",
+      "name": "Register - Password less than 8 characters",
       "event": [
         {
           "listen": "test",
@@ -31,7 +31,53 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\" : \"John Doe\",\n    \"email\" : \"user8@gmail.com\",\n    \"role\" : \"user\"\n}",
+          "raw": "{\n    \"name\" : \"John Doe\",\n    \"email\" : \"user10@gmail.com\",\n    \"password\" : \"1234567\",\n    \"telephone\": \"0812345678\",\n    \"role\" : \"user\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{URL}}/api/v1/auth/register",
+          "host": [
+            "{{URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Register - Same Email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 409\", function () {\n    pm.response.to.have.status(409);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "description": "JSON Type"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\" : \"John Doe\",\n    \"email\" : \"user8@gmail.com\",\n    \"password\" : \"12345678\",\n    \"telephone\": \"0812345678\",\n    \"role\" : \"user\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -435,6 +481,108 @@
             "v1",
             "bookings",
             "{{booking_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{TOKEN}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "description": "JSON Type",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"telephone\" : \"{{$randomPhoneNumber}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{URL}}/api/v1/auth/profile",
+          "host": [
+            "{{URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "profile"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Change password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{TOKEN}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "description": "JSON Type",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"currentPassword\" : \"12345678\",\n    \"newPassword\" : \"12345678\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{URL}}/api/v1/auth/change-password",
+          "host": [
+            "{{URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "change-password"
           ]
         }
       },

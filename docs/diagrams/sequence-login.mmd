@@ -4,37 +4,47 @@ config:
 ---
 sequenceDiagram
     actor User
-    participant Router
-    participant Controller
+    participant Server as JavaScript: server
+    participant Router as Router: auth
+    participant Controller as Controller: auth
+    participant Model as Model: User
     participant DB as MongoDB
 
-    User->>Router: POST /api/v1/auth/login<br/>(email, password)
+    User->>Server: POST /api/v1/auth/login
+    Server->>Router: Route request
     Router->>Controller: login(req, res)
     Controller->>Controller: Validate email and password
 
-    alt Missing or invalid input
-        Controller-->>User: 400 Email and password required
+    alt Invalid input
+        Controller-->>User: 400 Bad Request
     else Valid input
-        Controller->>DB: Find user by email (include password hash)
-        DB-->>Controller: User record or not found
+        Controller->>Model: findOne(email)
+        Model->>DB: Query user
+        DB-->>Model: User data
+        Model-->>Controller: User result
 
         alt User not found
             Controller-->>User: 401 Invalid credentials
-        else Account is locked
-            Controller-->>User: 423 Account temporarily locked
-        else Account can log in
-            Controller->>Controller: Compare password with stored hash
+        else Account locked
+            Controller-->>User: 423 Account locked
+        else Account active
+            Controller->>Model: matchPassword(password)
+            Model-->>Controller: True / False
 
             alt Incorrect password
-                Controller->>DB: Update failed attempts&ﬂ°°59¶ß lock if threshold reached
-                DB-->>Controller: Updated lock status
-                Controller-->>User: 401 Invalid credentials
+                Controller->>Model: findOneAndUpdate(failed attempts / lock)
+                Model->>DB: Update failed attempts and lock status
+                DB-->>Model: Updated user
+                Model-->>Controller: Updated user
+                Controller-->>User: 401 / 423 Login failed
             else Correct password
-                Controller->>DB: Clear failed attempts if account is not locked
-                DB-->>Controller: Update result
+                Controller->>Model: updateOne(reset failed attempts / lock)
+                Model->>DB: Reset failed attempts and lock status
+                DB-->>Model: Update result
+                Model-->>Controller: Update result
 
                 alt Email not verified
-                    Controller-->>User: 403 Verify email before logging in
+                    Controller-->>User: 403 Email not verified
                 else Login successful
                     Controller->>Controller: Generate JWT
                     Controller-->>User: 200 User details and token
